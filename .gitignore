@@ -1,0 +1,30 @@
+# Environment files
+# .env
+# .env.local
+# .env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.env/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+
+# Node
+node_modules/
+dist/
+build/
+.eslintcache
+
