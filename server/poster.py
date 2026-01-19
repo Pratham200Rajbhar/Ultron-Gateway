@@ -17,7 +17,7 @@ async def get_jwt_token() -> str:
         )
         response.raise_for_status()
         data = response.json()
-        return data.get("token")
+        return data.get("accessToken") or data.get("token")
 
 
 def generate_slug(title: str) -> str:
