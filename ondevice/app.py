@@ -1,14 +1,44 @@
-from fastapi import FastAPI, Header, HTTPException, Depends
+from fastapi import FastAPI, Header, HTTPException, Depends, Request
 from models import GenerateRequest, GenerateResponse
 from ollama_client import generate_text
 from config import settings
 import logging
+import time
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="On-Device Ollama Service")
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    path = request.url.path
+    method = request.method
+    client_ip = request.client.host if request.client else "unknown"
+
+    try:
+        response = await call_next(request)
+        process_time = (time.time() - start_time) * 1000
+        status_code = response.status_code
+
+        log_msg = f"Request: {method} {path} - Client: {client_ip} - Status: {status_code} - Time: {process_time:.2f}ms"
+        if status_code >= 400:
+            logger.warning(log_msg)
+        else:
+            logger.info(log_msg)
+
+        return response
+    except Exception as e:
+        process_time = (time.time() - start_time) * 1000
+        logger.error(
+            f"Request Error: {method} {path} - Client: {client_ip} - Error: {str(e)} - Time: {process_time:.2f}ms",
+            exc_info=True,
+        )
+        raise
 
 
 async def verify_secret(x_secret: str = Header(...)):

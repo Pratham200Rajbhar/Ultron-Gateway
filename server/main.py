@@ -6,6 +6,8 @@ from telegram import send_telegram_message
 from config import settings
 from contextlib import asynccontextmanager
 import logging
+import time
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -33,6 +35,34 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Telegram-LLM-Poster Gateway", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    path = request.url.path
+    method = request.method
+    client_ip = request.client.host if request.client else "unknown"
+
+    try:
+        response = await call_next(request)
+        process_time = (time.time() - start_time) * 1000
+        status_code = response.status_code
+
+        log_msg = f"Request: {method} {path} - Client: {client_ip} - Status: {status_code} - Time: {process_time:.2f}ms"
+        if status_code >= 400:
+            logger.warning(log_msg)
+        else:
+            logger.info(log_msg)
+
+        return response
+    except Exception as e:
+        process_time = (time.time() - start_time) * 1000
+        logger.error(
+            f"Request Error: {method} {path} - Client: {client_ip} - Error: {str(e)} - Time: {process_time:.2f}ms",
+            exc_info=True,
+        )
+        raise
 
 
 @app.post("/telegram/webhook")
